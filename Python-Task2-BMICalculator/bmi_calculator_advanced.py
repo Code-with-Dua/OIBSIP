@@ -1,0 +1,239 @@
+"""
+BMI Calculator - Advanced Tier
+--------------------------------
+A tkinter GUI application that:
+  - Takes weight/height input through labeled fields and a Calculate button
+  - Shows the BMI result with colour-coded feedback based on category
+  - Supports multiple named users, each with their own saved history
+  - Persists every record to an SQLite database (bmi_records.db)
+  - Shows a matplotlib line-chart of a user's BMI trend over time
+  - Handles database errors gracefully with on-screen messages
+"""
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+from bmi_calculator_beginner import calculate_bmi, classify_bmi
+import bmi_db_utils as db
+
+CATEGORY_COLORS = {
+    "Underweight": "#3498db",  # blue
+    "Normal weight": "#2ecc71",  # green
+    "Overweight": "#f39c12",  # orange
+    "Obese": "#e74c3c",  # red
+}
+
+
+class BMIApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("BMI Calculator")
+        self.geometry("480x560")
+        self.resizable(False, False)
+        self.configure(bg="#f4f6f7")
+
+        ok, error = db.init_db()
+        if not ok:
+            messagebox.showerror("Database Error", error)
+
+        self._build_input_section()
+        self._build_result_section()
+        self._build_history_section()
+
+    # ---------------------------------------------------------------- UI
+
+    def _build_input_section(self):
+        frame = tk.Frame(self, bg="#f4f6f7", padx=20, pady=20)
+        frame.pack(fill="x")
+
+        tk.Label(
+            frame, text="BMI Calculator", font=("Segoe UI", 18, "bold"), bg="#f4f6f7"
+        ).grid(row=0, column=0, columnspan=2, pady=(0, 15))
+
+        tk.Label(frame, text="Name:", bg="#f4f6f7", font=("Segoe UI", 10)).grid(
+            row=1, column=0, sticky="w", pady=5
+        )
+        self.name_entry = tk.Entry(frame, font=("Segoe UI", 10))
+        self.name_entry.grid(row=1, column=1, sticky="ew", pady=5)
+
+        tk.Label(frame, text="Weight (kg):", bg="#f4f6f7", font=("Segoe UI", 10)).grid(
+            row=2, column=0, sticky="w", pady=5
+        )
+        self.weight_entry = tk.Entry(frame, font=("Segoe UI", 10))
+        self.weight_entry.grid(row=2, column=1, sticky="ew", pady=5)
+
+        tk.Label(frame, text="Height (m):", bg="#f4f6f7", font=("Segoe UI", 10)).grid(
+            row=3, column=0, sticky="w", pady=5
+        )
+        self.height_entry = tk.Entry(frame, font=("Segoe UI", 10))
+        self.height_entry.grid(row=3, column=1, sticky="ew", pady=5)
+
+        frame.columnconfigure(1, weight=1)
+
+        button_frame = tk.Frame(frame, bg="#f4f6f7")
+        button_frame.grid(row=4, column=0, columnspan=2, pady=(15, 0), sticky="ew")
+
+        tk.Button(
+            button_frame,
+            text="Calculate",
+            font=("Segoe UI", 10, "bold"),
+            bg="#2c3e50",
+            fg="white",
+            command=self.on_calculate,
+        ).pack(side="left", expand=True, fill="x", padx=(0, 5))
+
+        tk.Button(
+            button_frame,
+            text="Show Trend Graph",
+            font=("Segoe UI", 10, "bold"),
+            bg="#34495e",
+            fg="white",
+            command=self.on_show_graph,
+        ).pack(side="left", expand=True, fill="x", padx=(5, 0))
+
+    def _build_result_section(self):
+        self.result_label = tk.Label(
+            self,
+            text="Enter your details above",
+            font=("Segoe UI", 14, "bold"),
+            bg="#f4f6f7",
+            fg="#2c3e50",
+            pady=10,
+        )
+        self.result_label.pack(fill="x")
+
+    def _build_history_section(self):
+        frame = tk.Frame(self, padx=20, pady=10)
+        frame.pack(fill="both", expand=True)
+
+        tk.Label(
+            frame, text="History for this name", font=("Segoe UI", 11, "bold")
+        ).pack(anchor="w")
+
+        columns = ("date", "weight", "height", "bmi", "category")
+        self.tree = ttk.Treeview(frame, columns=columns, show="headings", height=10)
+        for col, label, width in [
+            ("date", "Date", 110),
+            ("weight", "Weight", 65),
+            ("height", "Height", 65),
+            ("bmi", "BMI", 60),
+            ("category", "Category", 100),
+        ]:
+            self.tree.heading(col, text=label)
+            self.tree.column(col, width=width, anchor="center")
+        self.tree.pack(fill="both", expand=True, pady=(5, 0))
+
+    # ------------------------------------------------------------ actions
+
+    def _read_validated_inputs(self):
+        """
+        Validates the name/weight/height entries.
+        Returns (name, weight, height) on success, or None (after showing
+        a messagebox) if anything is invalid.
+        """
+        name = db.normalize_username(self.name_entry.get())
+        if not name:
+            messagebox.showerror(
+                "Missing Name", "Please enter a name before calculating."
+            )
+            return None
+
+        # Reflect the normalized casing back into the field so the user
+        # sees a consistent name (e.g. "dua" -> "Dua").
+        self.name_entry.delete(0, "end")
+        self.name_entry.insert(0, name)
+
+        try:
+            weight = float(self.weight_entry.get().strip())
+            height = float(self.height_entry.get().strip())
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Weight and height must be numbers.")
+            return None
+
+        if weight <= 0 or height <= 0:
+            messagebox.showerror(
+                "Invalid Input", "Weight and height must be greater than 0."
+            )
+            return None
+
+        return name, weight, height
+
+    def on_calculate(self):
+        parsed = self._read_validated_inputs()
+        if parsed is None:
+            return
+        name, weight, height = parsed
+
+        bmi = calculate_bmi(weight, height)
+        category = classify_bmi(bmi)
+        color = CATEGORY_COLORS[category]
+
+        self.result_label.configure(text=f"BMI: {bmi:.2f}  —  {category}", fg=color)
+
+        ok, error = db.add_record(name, weight, height, bmi, category)
+        if not ok:
+            messagebox.showerror("Database Error", error)
+            return
+
+        self._refresh_history(name)
+
+    def _refresh_history(self, name: str):
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+
+        ok, records = db.get_records_for_user(name)
+        if not ok:
+            messagebox.showerror("Database Error", records)
+            return
+
+        for _id, weight, height, bmi, category, date_recorded in records:
+            self.tree.insert(
+                "",
+                "end",
+                values=(date_recorded, weight, height, f"{bmi:.2f}", category),
+            )
+
+    def on_show_graph(self):
+        name = db.normalize_username(self.name_entry.get())
+        if not name:
+            messagebox.showerror(
+                "Missing Name", "Enter a name first, then calculate at least one BMI."
+            )
+            return
+
+        ok, records = db.get_records_for_user(name)
+        if not ok:
+            messagebox.showerror("Database Error", records)
+            return
+
+        if len(records) < 1:
+            messagebox.showinfo("No Data", f"No saved records for '{name}' yet.")
+            return
+
+        dates = [r[5] for r in records]
+        bmis = [r[3] for r in records]
+
+        graph_window = tk.Toplevel(self)
+        graph_window.title(f"BMI Trend — {name}")
+        graph_window.geometry("600x450")
+
+        figure = Figure(figsize=(5.5, 4), dpi=100)
+        plot = figure.add_subplot(111)
+        plot.plot(dates, bmis, marker="o", color="#2c3e50")
+        plot.set_title(f"BMI Trend for {name}")
+        plot.set_xlabel("Date")
+        plot.set_ylabel("BMI")
+        plot.tick_params(axis="x", rotation=45)
+        figure.tight_layout()
+
+        canvas = FigureCanvasTkAgg(figure, master=graph_window)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+
+
+if __name__ == "__main__":
+    app = BMIApp()
+    app.mainloop()
