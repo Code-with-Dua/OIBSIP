@@ -9,33 +9,31 @@ Command-line tool that:
   - Lets the user run multiple calculations without restarting the program
 """
 
-
-def get_positive_float(prompt: str) -> float:
-    """
-    Repeatedly asks the user for input until they provide a valid
-    positive number. Handles both non-numeric input and negative/zero
-    values with a clear error message.
-    """
-    while True:
-        raw_value = input(prompt).strip()
+#prompt : weight & height 
+def get_positive_float(prompt: str) -> float: # return float value 
+   
+    while True: #hamesha chlta rhy ga 
+        raw_value = input(prompt).strip() #prompt can be any # strip -> remove space
+        #try & except ->error handeling
         try:
-            value = float(raw_value)
+            value = float(raw_value) #convert in float 
+            #in case of error 
         except ValueError:
             print(
-                f"  ❌ '{raw_value}' is not a valid number. Please enter something like 65 or 65.5.\n"
+                f"   '{raw_value}' is not a valid number. Please enter something like 65 or 65.5.\n"
             )
             continue
 
         if value <= 0:
-            print("  ❌ Value must be greater than 0. Please try again.\n")
-            continue
+            print("   Value must be greater than 0. Please try again.\n")
+            continue #this round end new round start 
 
         return value
 
 
 def calculate_bmi(weight_kg: float, height_m: float) -> float:
-    """Calculates BMI using the standard formula: weight / height^2."""
-    return weight_kg / (height_m**2)
+    
+    return weight_kg / (height_m**2) #formula
 
 
 def classify_bmi(bmi: float) -> str:
@@ -51,6 +49,7 @@ def classify_bmi(bmi: float) -> str:
 
 
 def main():
+    #header 
     print("=" * 45)
     print("            BMI CALCULATOR")
     print("=" * 45)
@@ -64,15 +63,16 @@ def main():
         category = classify_bmi(bmi)
 
         print("\n" + "-" * 45)
-        print(f"  Your BMI is: {bmi:.2f}")
+        print(f"  Your BMI is: {bmi:.2f}") #till 2 decimal points 
         print(f"  Category:    {category}")
         print("-" * 45)
 
-        again = input("\nCalculate another BMI? (y/n): ").strip().lower()
+        again = input("\nCalculate another BMI? (y/n): ").strip().lower() #case insessitive 
         if again != "y":
             print("\nThanks for using the BMI Calculator. Goodbye!")
             break
 
-
+#if this run directly then run main also 
+#its functions is called in advance where main is not running
 if __name__ == "__main__":
     main()
