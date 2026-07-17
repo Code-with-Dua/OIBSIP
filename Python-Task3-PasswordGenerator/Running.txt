@@ -1,10 +1,11 @@
 Running Commands 
-python password_generator_beginner.py
+python password_generator_beginner.py   
 python password_generator_advanced.py
 
 
 Dependency 
-pip install pyperclip      ---for advance 
-pip install colorama       ---for beginner 
+pip install pyperclip      ---for advance  (automate copy to clip board)
+pip install colorama       ---for beginner    (colors for terminal we use fore and style)
 
 
+  

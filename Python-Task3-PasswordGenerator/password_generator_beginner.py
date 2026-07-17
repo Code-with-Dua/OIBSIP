@@ -13,10 +13,10 @@ into the right calls for Windows Command Prompt as well as Mac/Linux
 terminals - plain ANSI codes alone don't always render on older cmd.exe.
 """
 
-import random
-import string
+import random        #ch random choose 
+import string        #have ch & digits groups 
 
-from colorama import init, Fore, Style
+from colorama import init, Fore, Style     #colorama -> colors for terminal #Fore-> color #Style-> bold and font
 
 init(autoreset=True)  # every print resets colour automatically afterwards
 
@@ -83,7 +83,7 @@ def get_selected_types() -> dict:
             print(f"{Fore.RED}  ❌ Please select at least 2 character types.\n")
             continue
 
-        return {
+        return {  #dictionary  ("key": value),
             "upper": use_upper,
             "lower": use_lower,
             "digits": use_digits,
@@ -95,7 +95,7 @@ def generate_password(length: int, types: dict) -> str:
     """
     Builds a password of the given length that is guaranteed to contain
     at least one character from every selected type.
-    """
+    """  #group
     type_pools = {
         "upper": string.ascii_uppercase,
         "lower": string.ascii_lowercase,
@@ -103,11 +103,11 @@ def generate_password(length: int, types: dict) -> str:
         "symbols": string.punctuation,
     }
 
-    active_pools = [pool for key, pool in type_pools.items() if types[key]]
-    combined_pool = "".join(active_pools)
-
-    # Step 1: guarantee one character from each selected type
-    password_chars = [random.choice(pool) for pool in active_pools]
+    active_pools = [pool for key, pool in type_pools.items() if types[key]]   #make group of selected types
+    combined_pool = "".join(active_pools)                                     #generate string by joining active pools
+ 
+    # Step 1: guarantee one character from each selected type (random only may leads to missing active pools)
+    password_chars = [random.choice(pool) for pool in active_pools]       
 
     # Step 2: fill the rest of the length from the combined pool
     remaining = length - len(password_chars)
@@ -116,7 +116,7 @@ def generate_password(length: int, types: dict) -> str:
     # Step 3: shuffle so the guaranteed characters aren't always at the start
     random.shuffle(password_chars)
 
-    return "".join(password_chars)
+    return "".join(password_chars) #make string 
 
 
 def main():
@@ -134,15 +134,15 @@ def main():
         print(f"{Fore.GREEN}{Style.BRIGHT}  Generated password: {password}")
         print(Fore.YELLOW + "-" * 45)
 
-        again = (
+        again = ( #here again is variable
             input(f"\n{Fore.CYAN}Generate another password? (y/n): {Style.RESET_ALL}")
-            .strip()
+            .strip()   #trim spaces
             .lower()
         )
         if again != "y":
             print(f"\n{Fore.YELLOW}Thanks for using the Password Generator. Goodbye!")
-            break
+            break        #ruk jau udher hi 
 
-
+#file chly to main chly import hu to main nhi chly 
 if __name__ == "__main__":
     main()

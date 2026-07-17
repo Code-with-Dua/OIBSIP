@@ -15,11 +15,11 @@ A tkinter GUI application that:
 """
 
 import string
-import secrets
+import secrets #cryptographically secure random numbers for password generation
 import random  # only for SystemRandom, a cryptographically secure shuffle
 
-import tkinter as tk
-from tkinter import messagebox
+import tkinter as tk  #GUI
+from tkinter import messagebox   #errors
 
 try:
     import pyperclip
@@ -47,7 +47,7 @@ CYAN = "#06B6D4"  # focus rings, password text, borders
 
 # Copy button (ghost)
 COPY_BG = "#3F3F46"
-COPY_FG = "#A1A1AA"
+COPY_FG = "#F3F3F5"
 
 STRENGTH_STYLE = {
     "Weak": "#DC2626",  # red
@@ -72,7 +72,7 @@ def build_type_pools(exclude_ambiguous: bool) -> dict:
         }
     return pools
 
-
+#use secure. instead of random.
 def generate_secure_password(
     length: int, selected_types: dict, exclude_ambiguous: bool
 ) -> str:
@@ -106,7 +106,7 @@ def evaluate_strength(length: int, selected_types: dict) -> str:
     if length >= 12:
         score += 1
     if length >= 16:
-        score += 1
+        score += 1    #strongest =3
 
     score += sum(selected_types.values())  # +1 per selected type
 
@@ -353,7 +353,7 @@ class PasswordGeneratorApp(tk.Tk):
         for pw in self.history:
             self.history_listbox.insert("end", pw)
 
-    def _copy_to_clipboard(self, password: str, silent: bool = False):
+    def _copy_to_clipboard(self, password: str, silent: bool = False):  #silent -> variable 
         if not CLIPBOARD_AVAILABLE:
             if not silent:
                 messagebox.showerror(
